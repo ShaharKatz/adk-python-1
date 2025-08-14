@@ -262,6 +262,7 @@ def to_agent_engine(
     description: Optional[str] = None,
     requirements_file: Optional[str] = None,
     env_file: Optional[str] = None,
+    extra_packages: Optional[list[str]] = None,
 ):
   """Deploys an agent to Vertex AI Agent Engine.
 
@@ -306,6 +307,8 @@ def to_agent_engine(
       If not specified, the `.env` file in the `agent_folder` will be used. The
       values of `GOOGLE_CLOUD_PROJECT` and `GOOGLE_CLOUD_LOCATION` will be
       overridden by `project` and `region` if they are specified.
+    extra_packages (list[str]): Any additional packages to install. Default is
+      None.
   """
   app_name = os.path.basename(agent_folder)
   agent_src_path = os.path.join(temp_folder, app_name)
@@ -435,13 +438,18 @@ def to_agent_engine(
         sys_paths=[temp_folder[1:]],
         agent_framework='google-adk',
     )
+    if extra_packages:
+      extra_packages = list(extra_packages)
+      extra_packages.append(temp_folder)
+    else:
+      extra_packages = [temp_folder]
     agent_config = dict(
         agent_engine=agent_engine,
         requirements=requirements_file,
         display_name=display_name,
         description=description,
         env_vars=env_vars,
-        extra_packages=[temp_folder],
+        extra_packages=extra_packages,
     )
 
     if not agent_engine_id:

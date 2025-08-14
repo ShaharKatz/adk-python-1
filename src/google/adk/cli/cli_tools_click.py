@@ -1141,6 +1141,11 @@ def cli_deploy_cloud_run(
         " NOTE: This flag is temporary and will be removed in the future."
     ),
 )
+@click.option(
+    "--extra_packages",
+    help="Optional. Any additional packages to install.",
+    multiple=True,
+)
 @click.argument(
     "agent",
     type=click.Path(
@@ -1161,6 +1166,7 @@ def cli_deploy_agent_engine(
     env_file: str,
     requirements_file: str,
     absolutize_imports: bool,
+    extra_packages: Optional[list[str]],
 ):
   """Deploys an agent to Agent Engine.
 
@@ -1184,6 +1190,7 @@ def cli_deploy_agent_engine(
         env_file=env_file,
         requirements_file=requirements_file,
         absolutize_imports=absolutize_imports,
+        extra_packages=extra_packages,
     )
   except Exception as e:
     click.secho(f"Deploy failed: {e}", fg="red", err=True)
