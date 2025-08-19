@@ -115,7 +115,7 @@ class Gemini(BaseLlm):
         self._api_backend,
         stream,
     )
-    logger.debug(_build_request_log(llm_request))
+    logger.info(_build_request_log(llm_request))
 
     # Always add tracking headers to custom headers given it will override
     # the headers set in the api client constructor to avoid tracking headers
@@ -144,7 +144,7 @@ class Gemini(BaseLlm):
       # complete_turn flag to detect end while sse depends on finish_reason.
       async with Aclosing(responses) as agen:
         async for response in agen:
-          logger.debug(_build_response_log(response))
+          logger.info(_build_response_log(response))
           llm_response = LlmResponse.create(response)
           usage_metadata = llm_response.usage_metadata
           if (
@@ -203,7 +203,7 @@ class Gemini(BaseLlm):
           config=llm_request.config,
       )
       logger.info('Response received from the model.')
-      logger.debug(_build_response_log(response))
+      logger.info(_build_response_log(response))
       yield LlmResponse.create(response)
 
   @cached_property
