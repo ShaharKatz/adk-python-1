@@ -34,7 +34,11 @@ class LoopAgentConfig(BaseAgentConfig):
       extra='forbid',
   )
 
-  agent_class: Literal['LoopAgent'] = Field(
+  agent_class: Literal[
+      'LoopAgent',
+      'google.adk.agents.LoopAgent',
+      'google.adk.agents.loop_agent.LoopAgent',
+  ] = Field(
       default='LoopAgent',
       description='The value is used to uniquely identify the LoopAgent class.',
   )

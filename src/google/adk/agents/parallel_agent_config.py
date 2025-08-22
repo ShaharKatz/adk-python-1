@@ -33,7 +33,11 @@ class ParallelAgentConfig(BaseAgentConfig):
       extra='forbid',
   )
 
-  agent_class: Literal['ParallelAgent'] = Field(
+  agent_class: Literal[
+      'ParallelAgent',
+      'google.adk.agents.ParallelAgent',
+      'google.adk.agents.parallel_agent.ParallelAgent',
+  ] = Field(
       default='ParallelAgent',
       description=(
           'The value is used to uniquely identify the ParallelAgent class.'

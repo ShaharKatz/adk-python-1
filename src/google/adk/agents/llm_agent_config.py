@@ -37,7 +37,12 @@ class LlmAgentConfig(BaseAgentConfig):
       extra='forbid',
   )
 
-  agent_class: Literal['LlmAgent', ''] = Field(
+  agent_class: Literal[
+      'LlmAgent',
+      'google.adk.agents.LlmAgent',
+      'google.adk.agents.llm_agent.LlmAgent',
+      '',
+  ] = Field(
       default='LlmAgent',
       description=(
           'The value is used to uniquely identify the LlmAgent class. If it is'

@@ -33,7 +33,11 @@ class SequentialAgentConfig(BaseAgentConfig):
       extra='forbid',
   )
 
-  agent_class: Literal['SequentialAgent'] = Field(
+  agent_class: Literal[
+      'SequentialAgent',
+      'google.adk.agents.SequentialAgent',
+      'google.adk.agents.sequential_agent.SequentialAgent',
+  ] = Field(
       default='SequentialAgent',
       description=(
           'The value is used to uniquely identify the SequentialAgent class.'
