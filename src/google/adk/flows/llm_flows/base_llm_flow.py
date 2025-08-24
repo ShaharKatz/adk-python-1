@@ -36,7 +36,6 @@ from ...agents.invocation_context import InvocationContext
 from ...agents.live_request_queue import LiveRequestQueue
 from ...agents.readonly_context import ReadonlyContext
 from ...agents.run_config import StreamingMode
-from ...agents.transcription_entry import TranscriptionEntry
 from ...events.event import Event
 from ...models.base_llm_connection import BaseLlmConnection
 from ...models.llm_request import LlmRequest
@@ -67,6 +66,56 @@ DEFAULT_TASK_COMPLETION_DELAY = 1.0
 
 # Statistics configuration
 DEFAULT_ENABLE_CACHE_STATISTICS = False
+
+
+def _get_audio_transcription_from_session(
+    invocation_context: InvocationContext,
+) -> list[types.Content]:
+  """Get audio and transcription content from session events.
+
+  Collects audio file references and transcription text from session events
+  to reconstruct the conversation history including multimodal content.
+
+  Args:
+    invocation_context: The invocation context containing session data.
+
+  Returns:
+    A list of Content objects containing audio files and transcriptions.
+  """
+  contents = []
+
+  for event in invocation_context.session.events:
+    # Skip events without relevant content
+    if not event.content or not event.content.parts:
+      continue
+
+    # Collect audio file references
+    if any(
+        part.file_data and part.file_data.mime_type.startswith('audio/')
+        for part in event.content.parts
+    ):
+      contents.append(event.content)
+
+    # Collect transcription text events
+    if hasattr(event, 'input_transcription') and event.input_transcription:
+      contents.append(
+          types.Content(
+              role='user',
+              parts=[types.Part.from_text(text=event.input_transcription.text)],
+          )
+      )
+
+    if hasattr(event, 'output_transcription') and event.output_transcription:
+      contents.append(
+          types.Content(
+              role='model',
+              parts=[
+                  types.Part.from_text(text=event.output_transcription.text)
+              ],
+          )
+      )
+
+  return contents
 
 
 class BaseLlmFlow(ABC):
@@ -129,25 +178,17 @@ class BaseLlmFlow(ABC):
           if llm_request.contents:
             # Sends the conversation history to the model.
             with tracer.start_as_current_span('send_data'):
-              if invocation_context.transcription_cache:
-                from . import audio_transcriber
+              # Get audio/transcription content from session instead of cache
+              audio_transcription_contents = (
+                  _get_audio_transcription_from_session(invocation_context)
+              )
 
-                audio_transcriber = audio_transcriber.AudioTranscriber(
-                    init_client=True
-                    if invocation_context.run_config.input_audio_transcription
-                    is None
-                    else False
-                )
-                contents = audio_transcriber.transcribe_file(invocation_context)
-                logger.debug('Sending history to model: %s', contents)
-                await llm_connection.send_history(contents)
-                invocation_context.transcription_cache = None
-                trace_send_data(invocation_context, event_id, contents)
-              else:
-                await llm_connection.send_history(llm_request.contents)
-                trace_send_data(
-                    invocation_context, event_id, llm_request.contents
-                )
+              # Combine regular contents with audio/transcription from session
+              all_contents = llm_request.contents + audio_transcription_contents
+
+              logger.debug('Sending history to model: %s', all_contents)
+              await llm_connection.send_history(all_contents)
+              trace_send_data(invocation_context, event_id, all_contents)
 
           send_task = asyncio.create_task(
               self._send_to_model(llm_connection, invocation_context)
@@ -258,15 +299,6 @@ class BaseLlmFlow(ABC):
       elif live_request.activity_end:
         await llm_connection.send_realtime(types.ActivityEnd())
       elif live_request.blob:
-        # Cache audio data here for transcription
-        if not invocation_context.transcription_cache:
-          invocation_context.transcription_cache = []
-        if not invocation_context.run_config.input_audio_transcription:
-          # if the live model's input transcription is not enabled, then
-          # we use our onwn audio transcriber to achieve that.
-          invocation_context.transcription_cache.append(
-              TranscriptionEntry(role='user', data=live_request.blob)
-          )
 
         # Cache input audio chunks before flushing
         self.audio_cache_manager.cache_audio(
@@ -349,24 +381,6 @@ class BaseLlmFlow(ABC):
                 )
             ) as agen:
               async for event in agen:
-                if (
-                    event.content
-                    and event.content.parts
-                    and event.content.parts[0].inline_data is None
-                    and not event.partial
-                ):
-                  # This can be either user data or transcription data.
-                  # when output transcription enabled, it will contain model's
-                  # transcription.
-                  # when input transcription enabled, it will contain user
-                  # transcription.
-                  if not invocation_context.transcription_cache:
-                    invocation_context.transcription_cache = []
-                  invocation_context.transcription_cache.append(
-                      TranscriptionEntry(
-                          role=event.content.role, data=event.content
-                      )
-                  )
                 # Cache output audio chunks from model responses
                 # TODO: support video data
                 if (

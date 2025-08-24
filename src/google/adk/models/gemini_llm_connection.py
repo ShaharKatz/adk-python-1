@@ -50,12 +50,18 @@ class GeminiLlmConnection(BaseLlmConnection):
     # TODO: Remove this filter and translate unary contents to streaming
     # contents properly.
 
-    # We ignore any audio from user during the agent transfer phase
-    contents = [
-        content
-        for content in history
-        if content.parts and content.parts[0].text
-    ]
+    # Filter contents to include text and audio file references, but exclude inline audio
+    contents = []
+    for content in history:
+      if content.parts:
+        # Include text content
+        if content.parts[0].text:
+          contents.append(content)
+        # Include audio file references (from session artifacts), but not inline audio data
+        elif content.parts[0].file_data and content.parts[
+            0
+        ].file_data.mime_type.startswith('audio/'):
+          contents.append(content)
 
     if contents:
       await self._gemini_session.send(
