@@ -32,6 +32,7 @@ from ..memory.base_memory_service import BaseMemoryService
 from ..memory.in_memory_memory_service import InMemoryMemoryService
 from ..runners import Runner
 from ..sessions.base_session_service import BaseSessionService
+from ..sessions.vertex_ai_session_service import VertexAiSessionService  # TODO: some users won't have this dependency.
 from ..sessions.in_memory_session_service import InMemorySessionService
 from ..sessions.session import Session
 from ..utils.context_utils import Aclosing
@@ -207,14 +208,25 @@ class EvaluationGenerator:
         initial_session.app_name if initial_session else "EvaluationGenerator"
     )
     user_id = initial_session.user_id if initial_session else "test_user_id"
-    session_id = session_id if session_id else str(uuid.uuid4())
 
-    _ = await session_service.create_session(
+    if isinstance(session_service, VertexAiSessionService):
+      vertex_session = await session_service.create_session(
+          app_name=app_name,
+          user_id=user_id,
+          state=initial_session.state if initial_session else {}
+      )
+      if hasattr(vertex_session, "id"):
+          session_id = vertex_session.id
+      else:
+        raise ValueError("Session ID was not returned by the Vertex AI session service during session creation.")
+    else:
+      session_id = session_id if session_id else str(uuid.uuid4())
+      _ = await session_service.create_session(
         app_name=app_name,
         user_id=user_id,
         state=initial_session.state if initial_session else {},
         session_id=session_id,
-    )
+      )
 
     if not artifact_service:
       artifact_service = InMemoryArtifactService()

@@ -403,7 +403,7 @@ class LocalEvalService(BaseEvalService):
     )
 
     try:
-      inferences = (
+      inferences, session_id = (
           await EvaluationGenerator._generate_inferences_from_root_agent(
               root_agent=root_agent,
               user_simulator=self._user_simulator_provider.provide(eval_case),
@@ -416,6 +416,7 @@ class LocalEvalService(BaseEvalService):
       )
 
       inference_result.inferences = inferences
+      inference_result.session_id = session_id  # Relevant for Vertex AI Session Service and other services that use ad-hoc session id.
       inference_result.status = InferenceStatus.SUCCESS
 
       return inference_result
