@@ -33,7 +33,7 @@ from ..memory.in_memory_memory_service import InMemoryMemoryService
 from ..runners import Runner
 from ..sessions.base_session_service import BaseSessionService
 try: 
-  from ..sessions.vertex_ai_session_service import VertexAiSessionService  # TODO: some users won't have this dependency.
+  from ..sessions.vertex_ai_session_service import VertexAiSessionService
 except ImportError:
   VertexAiSessionService = None
 from ..sessions.in_memory_session_service import InMemorySessionService
