@@ -32,7 +32,10 @@ from ..memory.base_memory_service import BaseMemoryService
 from ..memory.in_memory_memory_service import InMemoryMemoryService
 from ..runners import Runner
 from ..sessions.base_session_service import BaseSessionService
-from ..sessions.vertex_ai_session_service import VertexAiSessionService  # TODO: some users won't have this dependency.
+try: 
+  from ..sessions.vertex_ai_session_service import VertexAiSessionService  # TODO: some users won't have this dependency.
+except ImportError:
+  VertexAiSessionService = None
 from ..sessions.in_memory_session_service import InMemorySessionService
 from ..sessions.session import Session
 from ..utils.context_utils import Aclosing
@@ -209,7 +212,7 @@ class EvaluationGenerator:
     )
     user_id = initial_session.user_id if initial_session else "test_user_id"
 
-    if isinstance(session_service, VertexAiSessionService):
+    if VertexAiSessionService and isinstance(session_service, VertexAiSessionService):
       vertex_session = await session_service.create_session(
           app_name=app_name,
           user_id=user_id,
