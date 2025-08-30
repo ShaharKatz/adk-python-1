@@ -218,10 +218,7 @@ class EvaluationGenerator:
           user_id=user_id,
           state=initial_session.state if initial_session else {}
       )
-      if hasattr(vertex_session, "id"):
-          session_id = vertex_session.id
-      else:
-        raise ValueError("Session ID was not returned by the Vertex AI session service during session creation.")
+      session_id = vertex_session.id
     else:
       session_id = session_id if session_id else str(uuid.uuid4())
       _ = await session_service.create_session(
