@@ -31,6 +31,8 @@ from ..errors.not_found_error import NotFoundError
 from ..memory.base_memory_service import BaseMemoryService
 from ..sessions.base_session_service import BaseSessionService
 from ..sessions.in_memory_session_service import InMemorySessionService
+from ..sessions.base_session_id_supplier import BaseSessionIdSupplier
+from ..sessions.pre_created_session_id_supplier import PreCreatedSessionIdSupplier
 from ..utils.feature_decorator import experimental
 from .base_eval_service import BaseEvalService
 from .base_eval_service import EvaluateConfig
@@ -74,11 +76,9 @@ class LocalEvalService(BaseEvalService):
       eval_sets_manager: EvalSetsManager,
       metric_evaluator_registry: Optional[MetricEvaluatorRegistry] = None,
       session_service: Optional[BaseSessionService] = None,
+      session_id_supplier: BaseSessionIdSupplier = PreCreatedSessionIdSupplier(InMemorySessionService()),
       artifact_service: Optional[BaseArtifactService] = None,
       eval_set_results_manager: Optional[EvalSetResultsManager] = None,
-      session_id_supplier: Callable[[], str] = _get_session_id,
-      user_simulator_provider: UserSimulatorProvider = UserSimulatorProvider(),
-      memory_service: Optional[BaseMemoryService] = None,
   ):
     self._root_agent = root_agent
     self._eval_sets_manager = eval_sets_manager
@@ -394,7 +394,13 @@ class LocalEvalService(BaseEvalService):
       root_agent: BaseAgent,
   ) -> InferenceResult:
     initial_session = eval_case.session_input
-    session_id = self._session_id_supplier()
+
+    session_id = await self._session_id_supplier.get_session_id(
+      app_name=app_name, 
+      user_id=initial_session.user_id if initial_session else "test_user_id", 
+      initial_state=initial_session.state if initial_session else {}
+    )
+
     inference_result = InferenceResult(
         app_name=app_name,
         eval_set_id=eval_set_id,
@@ -403,7 +409,7 @@ class LocalEvalService(BaseEvalService):
     )
 
     try:
-      inferences, session_id = (
+      inferences = (
           await EvaluationGenerator._generate_inferences_from_root_agent(
               root_agent=root_agent,
               user_simulator=self._user_simulator_provider.provide(eval_case),
@@ -416,7 +422,8 @@ class LocalEvalService(BaseEvalService):
       )
 
       inference_result.inferences = inferences
-      inference_result.session_id = session_id  # Relevant for Vertex AI Session Service and other services that use ad-hoc session id.
+      # TODO: remove this after the changes
+      # inference_result.session_id = session_id  # Relevant for Vertex AI Session Service and other services that use ad-hoc session id.
       inference_result.status = InferenceStatus.SUCCESS
 
       return inference_result
