@@ -231,7 +231,7 @@ class EvaluationGenerator:
           session_id=session_id,
         )
       
-      session_id = session.id
+      session_id = session['id']
     else:
       # session_id is not provided, create a new session id from the provider 
       if not session_id_supplier:
