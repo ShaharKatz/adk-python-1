@@ -32,11 +32,9 @@ from ..memory.base_memory_service import BaseMemoryService
 from ..memory.in_memory_memory_service import InMemoryMemoryService
 from ..runners import Runner
 from ..sessions.base_session_service import BaseSessionService
-try: 
-  from ..sessions.vertex_ai_session_service import VertexAiSessionService
-except ImportError:
-  VertexAiSessionService = None
 from ..sessions.in_memory_session_service import InMemorySessionService
+from ..sessions.base_session_id_supplier import BaseSessionIdSupplier
+from ..sessions.pre_created_session_id_supplier import PreCreatedSessionIdSupplier
 from ..sessions.session import Session
 from ..utils.context_utils import Aclosing
 from ._retry_options_utils import EnsureRetryOptionsPlugin
@@ -196,6 +194,7 @@ class EvaluationGenerator:
       initial_session: Optional[SessionInput] = None,
       session_id: Optional[str] = None,
       session_service: Optional[BaseSessionService] = None,
+      session_id_supplier: Optional[BaseSessionIdSupplier] = None,
       artifact_service: Optional[BaseArtifactService] = None,
       memory_service: Optional[BaseMemoryService] = None,
   ) -> list[Invocation]:
@@ -210,23 +209,64 @@ class EvaluationGenerator:
     app_name = (
         initial_session.app_name if initial_session else "EvaluationGenerator"
     )
-    user_id = initial_session.user_id if initial_session else "test_user_id"
+    user_id = initial_session.user_id if initial_session else None # TODO: remove this "test_user_id"
 
-    if VertexAiSessionService and isinstance(session_service, VertexAiSessionService):
-      vertex_session = await session_service.create_session(
-          app_name=app_name,
-          user_id=user_id,
-          state=initial_session.state if initial_session else {}
-      )
-      session_id = vertex_session.id
-    else:
-      session_id = session_id if session_id else str(uuid.uuid4())
-      _ = await session_service.create_session(
+    # if session_is is provided, check if the session exists
+    if session_id:
+      session = await session_service.get_session(
         app_name=app_name,
         user_id=user_id,
-        state=initial_session.state if initial_session else {},
         session_id=session_id,
       )
+      if session:
+        # session exists, do nothing
+        pass
+      else:
+        # session does not exist, create a new session
+        # TODO: this won't work with VertexAiSessionService
+        session = await session_service.create_session(
+          app_name=app_name,
+          user_id=user_id,
+          state=initial_session.state if initial_session else {},
+          session_id=session_id,
+        )
+      
+      session_id = session.id
+    else:
+      # session_id is not provided, create a new session id from the provider 
+      if not session_id_supplier:
+        session_id_supplier_service = PreCreatedSessionIdSupplier(session_service)
+      
+      session_id = await session_id_supplier_service.get_session_id(
+        app_name=app_name, 
+        user_id=user_id, 
+        initial_state=initial_session.state if initial_session else {}
+      )
+
+      _ = await session_service.create_session(
+        app_name=app_name, 
+        user_id=user_id, 
+        state=initial_session.state if initial_session else {}, 
+        session_id=session_id
+      )
+    
+        
+    # TODO: remove this after the changes
+    # if VertexAiSessionService and isinstance(session_service, VertexAiSessionService):
+    #   vertex_session = await session_service.create_session(
+    #       app_name=app_name,
+    #       user_id=user_id,
+    #       state=initial_session.state if initial_session else {}
+    #   )
+    #   session_id = vertex_session.id
+    # else:
+    #   session_id = session_id if session_id else str(uuid.uuid4())
+    #   _ = await session_service.create_session(
+    #     app_name=app_name,
+    #     user_id=user_id,
+    #     state=initial_session.state if initial_session else {},
+    #     session_id=session_id,
+    #   )
 
     if not artifact_service:
       artifact_service = InMemoryArtifactService()
