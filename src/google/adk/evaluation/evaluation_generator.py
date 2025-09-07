@@ -209,7 +209,7 @@ class EvaluationGenerator:
     app_name = (
         initial_session.app_name if initial_session else "EvaluationGenerator"
     )
-    user_id = initial_session.user_id if initial_session else None # TODO: remove this "test_user_id"
+    user_id = initial_session.user_id if initial_session else 'test_user_id' # TODO: remove this "test_user_id"
 
     # if session_is is provided, check if the session exists
     if session_id:
@@ -231,7 +231,7 @@ class EvaluationGenerator:
           session_id=session_id,
         )
       
-      session_id = session['id']
+      session_id = session.id  # TODO: some other service didn't have this.. 
     else:
       # session_id is not provided, create a new session id from the provider 
       if not session_id_supplier:
