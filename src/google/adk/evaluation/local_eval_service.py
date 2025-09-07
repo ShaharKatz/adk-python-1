@@ -62,10 +62,6 @@ logger = logging.getLogger('google_adk.' + __name__)
 EVAL_SESSION_ID_PREFIX = '___eval___session___'
 
 
-def _get_session_id() -> str:
-  return f'{EVAL_SESSION_ID_PREFIX}{str(uuid.uuid4())}'
-
-
 @experimental
 class LocalEvalService(BaseEvalService):
   """An implementation of BaseEvalService, that runs the evals locally."""
