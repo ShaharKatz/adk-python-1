@@ -72,7 +72,7 @@ class LocalEvalService(BaseEvalService):
       eval_sets_manager: EvalSetsManager,
       metric_evaluator_registry: Optional[MetricEvaluatorRegistry] = None,
       session_service: Optional[BaseSessionService] = None,
-      session_id_supplier: BaseSessionIdSupplier = PreCreatedSessionIdSupplier(InMemorySessionService()),
+      session_id_supplier: BaseSessionIdSupplier = None,
       artifact_service: Optional[BaseArtifactService] = None,
       eval_set_results_manager: Optional[EvalSetResultsManager] = None,
   ):
@@ -83,6 +83,7 @@ class LocalEvalService(BaseEvalService):
     )
     session_service = session_service or InMemorySessionService()
     artifact_service = artifact_service or InMemoryArtifactService()
+    session_id_supplier = session_id_supplier or PreCreatedSessionIdSupplier(session_service)
     self._metric_evaluator_registry = metric_evaluator_registry
     self._session_service = session_service
     self._artifact_service = artifact_service
