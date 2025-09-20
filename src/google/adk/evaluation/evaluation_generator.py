@@ -209,7 +209,7 @@ class EvaluationGenerator:
     app_name = (
         initial_session.app_name if initial_session else "EvaluationGenerator"
     )
-    user_id = initial_session.user_id if initial_session else 'test_user_id'
+    user_id = initial_session.user_id if initial_session else "test_user_id"
 
     # if session_is is provided, check if the session exists
     if session_id:
