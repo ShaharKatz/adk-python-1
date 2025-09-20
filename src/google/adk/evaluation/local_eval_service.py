@@ -419,8 +419,6 @@ class LocalEvalService(BaseEvalService):
       )
 
       inference_result.inferences = inferences
-      # TODO: remove this after the changes
-      # inference_result.session_id = session_id  # Relevant for Vertex AI Session Service and other services that use ad-hoc session id.
       inference_result.status = InferenceStatus.SUCCESS
 
       return inference_result

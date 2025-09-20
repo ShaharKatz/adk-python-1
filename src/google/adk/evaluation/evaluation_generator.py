@@ -209,7 +209,7 @@ class EvaluationGenerator:
     app_name = (
         initial_session.app_name if initial_session else "EvaluationGenerator"
     )
-    user_id = initial_session.user_id if initial_session else 'test_user_id' # TODO: remove this "test_user_id"
+    user_id = initial_session.user_id if initial_session else 'test_user_id'
 
     # if session_is is provided, check if the session exists
     if session_id:
@@ -223,7 +223,6 @@ class EvaluationGenerator:
         pass
       else:
         # session does not exist, create a new session
-        # TODO: this won't work with VertexAiSessionService
         session = await session_service.create_session(
           app_name=app_name,
           user_id=user_id,
@@ -249,24 +248,6 @@ class EvaluationGenerator:
         state=initial_session.state if initial_session else {}, 
         session_id=session_id
       )
-    
-        
-    # TODO: remove this after the changes
-    # if VertexAiSessionService and isinstance(session_service, VertexAiSessionService):
-    #   vertex_session = await session_service.create_session(
-    #       app_name=app_name,
-    #       user_id=user_id,
-    #       state=initial_session.state if initial_session else {}
-    #   )
-    #   session_id = vertex_session.id
-    # else:
-    #   session_id = session_id if session_id else str(uuid.uuid4())
-    #   _ = await session_service.create_session(
-    #     app_name=app_name,
-    #     user_id=user_id,
-    #     state=initial_session.state if initial_session else {},
-    #     session_id=session_id,
-    #   )
 
     if not artifact_service:
       artifact_service = InMemoryArtifactService()

@@ -11,7 +11,6 @@ class PreCreatedSessionIdSupplier(BaseSessionIdSupplier):
 
   @override
   async def get_session_id(self, app_name: Optional[str], user_id: Optional[str], initial_state: Optional[dict[str, Any]] = None) -> str:
-    # TODO: check the signature of the func, not sure that's the case
     created_session = await self.session_service.create_session(
       app_name=app_name, 
       user_id=user_id, 
