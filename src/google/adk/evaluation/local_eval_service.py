@@ -75,6 +75,8 @@ class LocalEvalService(BaseEvalService):
       session_id_supplier: BaseSessionIdSupplier = None,
       artifact_service: Optional[BaseArtifactService] = None,
       eval_set_results_manager: Optional[EvalSetResultsManager] = None,
+      user_simulator_provider: Optional[UserSimulatorProvider] = UserSimulatorProvider(),
+      memory_service: Optional[BaseMemoryService] = None,
   ):
     self._root_agent = root_agent
     self._eval_sets_manager = eval_sets_manager
